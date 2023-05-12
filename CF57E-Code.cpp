@@ -84,6 +84,9 @@ enum OnlineJudgeList {
 
 const int OnlineJudge = CodeForcesOJ;
 
+#pragma GCC optimize(114514)
+#pragma GCC optimize(1919810)
+#pragma GCC optimize(27726872)
 #include <bits/stdc++.h>
 using namespace std;
 using namespace chrono;
@@ -98,12 +101,17 @@ using namespace std;
 int read() {
     int x;
     char ch;
-    while (!isdigit(ch = fgn()));
+    int o = 1;
+    while (!isdigit(ch = fgn())) {
+        if (ch == '-') {
+            o = -1;
+        }
+    }
     x = ch ^ 48;
     while (isdigit(ch = fgn())) {
         x = (x << 3) + (x << 1) + (ch ^ 48);
     }
-    return x;
+    return x * o;
 }
 inline int max(int a, int b) {
     return a > b ? a : b;
@@ -119,10 +127,22 @@ inline void swap(int &a, int &b) {
         dswap(a, b);
     }
 }
-const int N = 2010, M = 1001, mod = 1e9 + 7;
-set<pair<int, int> > List[N];
+const int N = 2010, M = 1000, mod = 1e9 + 7;
+int List[N];
 bool vis[N][N];
 int x[N], y[N];
+bool delicious[N][N];
+int ksm(int a, int b, int c) {
+    if (!b) {
+        return 1;
+    }
+    int ans = ksm(a, b >> 1, c);
+    ans = ans * ans % c;
+    if (b & 1) {
+        ans = ans * a % c;
+    }
+    return ans;
+}
 #undef int
 int main() {
     auto start = system_clock::now();
@@ -132,40 +152,90 @@ int main() {
     // freopen("a.out", "w", stdout);
 #endif
     int n, k;
-    n = read(), k = read();
-    set<pair<int, int> > se;
+    k = read(), n = read();
     for (int i = 1; i <= n; i++) {
-        cin >> x[i] >> y[i];
+        x[i] = read(), y[i] = read();
     }
     for (int i = 1; i <= n; i++) {
         x[i] += M, y[i] += M;
-        se.insert(x[i], y[i]);
+        delicious[x[i]][y[i]] = true;
     }
-    int s = M, t = M;
-    const int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
-    const int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
-    queue<tuple<int, int, int> > q;
-    q.push({s, t, 0});
-    vis[s][t] = true;
-    List[0].insert({s, t});
-    while (q.size()) {
-        auto f = q.front();
-        q.pop();
-        int x = get<0>(f), y = get<1>(f), z = get<2>(f);
-        if (z == k) {
-            continue;
-        }
-        for (int i = 0; i < 8; i++) {
-            int nx = x + dx[i], ny = y + dy[i];
-            if (se.count({nx, ny}) || vis[nx][ny]) {
+    if (k <= 456) {
+        int s = M, t = M;
+        const int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
+        const int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
+        queue<tuple<int, int, int> > q;
+        q.push({s, t, 0});
+        vis[s][t] = true;
+        List[0] = 1;
+        while (q.size()) {
+            auto f = q.front();
+            q.pop();
+            int x = get<0>(f), y = get<1>(f), z = get<2>(f);
+            if (z == k) {
                 continue;
             }
-            vis[nx][ny] = true;
-            q.push({nx, ny, z + 1});
-            List[z + 1].insert({nx, ny});
+            for (int i = 0; i < 8; i++) {
+                int nx = x + dx[i], ny = y + dy[i];
+                if (delicious[nx][ny] || vis[nx][ny]) {
+                    continue;
+                }
+                vis[nx][ny] = true;
+                q.push({nx, ny, z + 1});
+                List[z + 1]++;
+            }
         }
+        int sum = 0;
+        for (int i = 0; i <= k; i++) {
+            sum += List[i];
+        }
+        cout << sum << '\n';
+    } else {
+        int s = M, t = M;
+        const int dx[] = {1, 2, 2, 1, -1, -2, -2, -1};
+        const int dy[] = {2, 1, -1, -2, -2, -1, 1, 2};
+        queue<tuple<int, int, int> > q;
+        q.push({s, t, 0});
+        vis[s][t] = true;
+        List[0] = 1;
+        while (q.size()) {
+            auto f = q.front();
+            q.pop();
+            int x = get<0>(f), y = get<1>(f), z = get<2>(f);
+            if (z == 456) {
+                continue;
+            }
+            for (int i = 0; i < 8; i++) {
+                int nx = x + dx[i], ny = y + dy[i];
+                if (delicious[nx][ny] || vis[nx][ny]) {
+                    continue;
+                }
+                vis[nx][ny] = true;
+                q.push({nx, ny, z + 1});
+                List[z + 1]++;
+            }
+        }
+        int sum = 0;
+        bool flag = false;
+        for (int i = 0; i <= 456; i++) {
+            sum += List[i];
+            if (!List[i]) {
+                flag = true;
+                break;
+            }
+        }
+        if (flag) {
+            cout << sum << '\n';
+            return 0;
+        }
+        auto gs = [&] (int x) {
+            return x * (x + 1) % mod * ksm(2, mod - 2, mod) % mod;
+        };
+        sum %= mod;
+        k -= 456, k %= mod;
+        sum = (sum + gs(k) * 28 % mod + List[456] * k % mod) % mod;
+        cout << sum << '\n';
     }
-    cout << List[k].size() << '\n';
     auto end = system_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
     cerr << "Time used " << double(duration.count()) * microseconds::period::num / microseconds::period::den << "s\n";
